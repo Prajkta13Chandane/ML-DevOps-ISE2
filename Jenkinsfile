@@ -1,4 +1,3 @@
-```groovy
 pipeline {
     agent any
 
@@ -7,14 +6,13 @@ pipeline {
     }
 
     stages {
-
         stage('1. Checkout Code') {
             steps {
                 checkout scm
             }
         }
 
-        stage('2. Check Python') {
+        stage('2. Check Tools') {
             steps {
                 bat 'python --version'
                 bat 'git --version'
@@ -24,7 +22,6 @@ pipeline {
         stage('3. Install Dependencies') {
             steps {
                 bat 'python -m pip install -r requirements.txt'
-                bat 'python -m pip install pytest'
             }
         }
 
@@ -34,37 +31,26 @@ pipeline {
             }
         }
 
-        stage('5. Validate Flask Application') {
+        stage('5. Validate Application') {
             steps {
-                bat '''
-                    python -c "from app import app; client = app.test_client(); response = client.get('/health'); print(response.get_data(as_text=True)); assert response.status_code == 200"
-                '''
+                bat 'python -c "from app import app; response = app.test_client().get(\"/\"); print(\"HTTP Status:\", response.status_code); assert response.status_code == 200"'
             }
         }
 
-        stage('6. Deployment Information') {
+        stage('6. Health Check') {
             steps {
-                echo 'Application tests passed.'
-                echo 'Flask application is ready to run.'
-            }
-        }
-
-        stage('7. Health Monitoring') {
-            steps {
-                bat '''
-                    python -c "from app import app; response = app.test_client().get('/health'); assert response.status_code == 200; print('Health Check: PASSED')"
-                '''
+                bat 'python -c "from app import app; response = app.test_client().get(\"/health\"); print(response.get_data(as_text=True)); assert response.status_code == 200"'
             }
         }
     }
 
     post {
         success {
-            echo 'SUCCESS: CI/CD pipeline completed successfully.'
+            echo 'SUCCESS: All pipeline stages completed.'
         }
 
         failure {
-            echo 'FAILED: Check Console Output for errors.'
+            echo 'FAILED: Check Console Output.'
         }
 
         always {
@@ -72,4 +58,3 @@ pipeline {
         }
     }
 }
-```
